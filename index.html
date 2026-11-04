@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101923">
+  <title>Transfert de Hohmann — visualiseur</title>
+  <style>
+    :root { color-scheme: dark; --bg:#101923; --panel:#182532; --line:#2c3d4a; --muted:#9fb0bc; --text:#edf4f7; --cyan:#5de1e6; --orange:#ffbd75; --blue:#76a9ff; }
+    * { box-sizing:border-box }
+    body { margin:0; min-height:100vh; background:radial-gradient(ellipse at 52% 0,#23394a 0,var(--bg) 56%); color:var(--text); font:15px/1.5 Inter,Segoe UI,system-ui,sans-serif }
+    main { max-width:1100px; margin:auto; padding:42px 24px 56px }
+    header { display:flex; align-items:flex-end; justify-content:space-between; gap:24px; margin-bottom:26px }
+    .eyebrow { margin:0 0 8px; color:var(--cyan); font-size:12px; font-weight:750; letter-spacing:.16em; text-transform:uppercase }
+    h1 { margin:0; font-size:clamp(30px,5vw,48px); line-height:1.08; letter-spacing:-.04em }
+    .sub { color:var(--muted); margin:12px 0 0; max-width:650px }
+    .tag { border:1px solid #34515d; border-radius:99px; padding:8px 12px; color:#b7d8df; white-space:nowrap; font-size:12px }
+    .layout { display:grid; grid-template-columns:minmax(0,1.5fr) minmax(290px,.85fr); gap:18px; align-items:stretch }
+    .card { background:linear-gradient(145deg,rgba(29,45,59,.96),rgba(21,33,44,.96)); border:1px solid var(--line); border-radius:18px; box-shadow:0 18px 50px #0003 }
+    .diagram { padding:16px; display:flex; flex-direction:column; min-height:440px }
+    .diagram-head { display:flex; justify-content:space-between; align-items:center; padding:4px 8px 10px }
+    .diagram-head strong { font-size:14px }
+    .legend { display:flex; gap:14px; color:var(--muted); font-size:12px }
+    .legend span { display:flex; align-items:center; gap:6px }
+    .dot { width:8px; height:8px; border-radius:50%; display:inline-block }
+    canvas { display:block; width:100%; flex:1; min-height:340px }
+    .caption { margin:4px 8px 0; color:var(--muted); font-size:12px }
+    .controls { padding:24px }
+    .controls h2 { margin:0 0 20px; font-size:17px }
+    .field { margin:0 0 24px }
+    .labelrow { display:flex; justify-content:space-between; gap:12px; align-items:center; margin-bottom:8px }
+    label { color:#cfdae0; font-size:13px; font-weight:650 }
+    .value { color:var(--cyan); font-variant-numeric:tabular-nums; font-weight:750 }
+    input[type=range] { width:100%; accent-color:var(--cyan); cursor:pointer }
+    input[type=number] { width:112px; border:1px solid #39515f; background:#111d27; color:var(--text); border-radius:9px; padding:8px 10px; font:inherit; text-align:right }
+    .hint { color:var(--muted); font-size:11px; margin:6px 0 0 }
+    .results { border-top:1px solid var(--line); padding-top:18px; margin-top:4px }
+    .result { display:flex; justify-content:space-between; padding:7px 0; color:#becbd2; font-size:13px }
+    .result b { color:var(--text); font-variant-numeric:tabular-nums }
+    .result.total { margin-top:6px; border-top:1px solid var(--line); padding-top:14px; font-size:15px }
+    .result.total b { color:var(--cyan); font-size:19px }
+    .note { margin-top:18px; border-left:2px solid var(--orange); padding:2px 0 2px 11px; color:var(--muted); font-size:12px }
+    footer { color:#82939e; font-size:12px; margin:18px 4px 0 }
+    @media(max-width:780px) { main{padding:28px 14px 40px} header{display:block} .tag{display:inline-block;margin-top:16px} .layout{grid-template-columns:1fr} .diagram{min-height:380px} canvas{min-height:300px} }
+    @media(max-width:440px) { .legend{gap:8px;font-size:10px} .diagram{padding:10px;min-height:340px} canvas{min-height:260px} .controls{padding:20px} }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <div>
+      <p class="eyebrow">Mécanique orbitale · Terre</p>
+      <h1>Transfert de Hohmann</h1>
+      <p class="sub">Explore les deux impulsions et le temps de vol nécessaires pour passer d’une orbite circulaire à une autre.</p>
+    </div>
+    <div class="tag">Modèle idéal à deux corps</div>
+  </header>
+  <section class="layout" aria-label="Calculateur de transfert orbital">
+    <div class="card diagram">
+      <div class="diagram-head">
+        <strong>Géométrie du transfert</strong>
+        <div class="legend"><span><i class="dot" style="background:var(--cyan)"></i>Départ</span><span><i class="dot" style="background:var(--orange)"></i>Transfert</span><span><i class="dot" style="background:var(--blue)"></i>Arrivée</span></div>
+      </div>
+      <canvas id="orbit" role="img" aria-label="Schéma des orbites de départ, de transfert et d’arrivée"></canvas>
+      <p class="caption">Schéma non à l’échelle — les distances sont comprimées pour rendre les orbites lisibles.</p>
+    </div>
+    <aside class="card controls">
+      <h2>Paramètres de mission</h2>
+      <div class="field">
+        <div class="labelrow"><label for="departure">Altitude de départ</label><span class="value"><span id="departureOut">200</span> km</span></div>
+        <input id="departure" type="range" min="160" max="35786" step="10" value="200" aria-label="Altitude de départ en kilomètres">
+        <div class="labelrow"><span class="hint">ou saisir une valeur</span><input id="departureNumber" type="number" min="0" max="1000000" step="10" value="200" aria-label="Saisir l’altitude de départ en kilomètres"></div>
+      </div>
+      <div class="field">
+        <div class="labelrow"><label for="arrival">Altitude d’arrivée</label><span class="value"><span id="arrivalOut">35786</span> km</span></div>
+        <input id="arrival" type="range" min="160" max="35786" step="10" value="35786" aria-label="Altitude d’arrivée en kilomètres">
+        <div class="labelrow"><span class="hint">ou saisir une valeur</span><input id="arrivalNumber" type="number" min="0" max="1000000" step="10" value="35786" aria-label="Saisir l’altitude d’arrivée en kilomètres"></div>
+      </div>
+      <div class="results" aria-live="polite">
+        <div class="result"><span>Impulsion au départ</span><b id="dv1">—</b></div>
+        <div class="result"><span>Impulsion à l’arrivée</span><b id="dv2">—</b></div>
+        <div class="result total"><span>Delta-v total</span><b id="total">—</b></div>
+        <div class="result"><span>Temps de transfert</span><b id="time">—</b></div>
+      </div>
+      <div class="note">Calcul idéal : orbites coplanaires, manœuvres instantanées. Les perturbations et les pertes réelles ne sont pas incluses.</div>
+    </aside>
+  </section>
+  <footer>Constantes utilisées : μ Terre = 398 600,4418 km³/s² · rayon moyen = 6 378,1363 km</footer>
+</main>
+<script>
+(() => {
+  const MU = 398600.4418, RE = 6378.1363;
+  const canvas = document.getElementById('orbit'), ctx = canvas.getContext('2d');
+  const controls = [
+    { range: document.getElementById('departure'), number: document.getElementById('departureNumber'), out: document.getElementById('departureOut') },
+    { range: document.getElementById('arrival'), number: document.getElementById('arrivalNumber'), out: document.getElementById('arrivalOut') }
+  ];
+  const fmt = (n, digits=3) => new Intl.NumberFormat('fr-FR', { minimumFractionDigits:digits, maximumFractionDigits:digits }).format(n);
+  function getValues() { return controls.map(c => Math.max(0, Number(c.number.value) || 0)); }
+  function sync(source, other, value) {
+    const v = Math.max(0, Math.min(1000000, Number(value) || 0));
+    source.number.value = v; source.out.textContent = fmt(v, 0);
+    if (v >= 160) source.range.value = Math.min(35786, v);
+    else source.range.value = 160;
+    update();
+  }
+  controls.forEach(c => {
+    c.range.addEventListener('input', () => sync(c, null, c.range.value));
+    c.number.addEventListener('input', () => sync(c, null, c.number.value));
+  });
+  function update() {
+    const [h1, h2] = getValues(), r1 = RE+h1, r2 = RE+h2;
+    controls.forEach((c,i) => c.out.textContent = fmt([h1,h2][i], 0));
+    if (Math.abs(r2-r1) < 1e-9) {
+      ['dv1','dv2','total','time'].forEach(id => document.getElementById(id).textContent = '—');
+      draw(r1,r2,h1,h2); return;
+    }
+    const a = (r1+r2)/2;
+    const vc1 = Math.sqrt(MU/r1), vc2 = Math.sqrt(MU/r2);
+    const vt1 = Math.sqrt(MU*(2/r1-1/a)), vt2 = Math.sqrt(MU*(2/r2-1/a));
+    const d1 = Math.abs(vt1-vc1), d2 = Math.abs(vc2-vt2), seconds = Math.PI*Math.sqrt(a*a*a/MU);
+    document.getElementById('dv1').textContent = fmt(d1)+' km/s';
+    document.getElementById('dv2').textContent = fmt(d2)+' km/s';
+    document.getElementById('total').textContent = fmt(d1+d2)+' km/s';
+    const hours=seconds/3600;
+    document.getElementById('time').textContent = hours>=24 ? `${fmt(hours/24,2)} j (${fmt(hours,1)} h)` : `${fmt(hours,2)} h`;
+    draw(r1,r2,h1,h2);
+  }
+  function draw(r1,r2,h1,h2) {
+    const rect=canvas.getBoundingClientRect(), dpr=window.devicePixelRatio||1;
+    canvas.width=Math.max(1,Math.round(rect.width*dpr)); canvas.height=Math.max(1,Math.round(rect.height*dpr));
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    const w=rect.width,h=rect.height,cx=w/2,cy=h/2;
+    ctx.clearRect(0,0,w,h);
+    const maxR=Math.max(r1,r2), minR=Math.min(r1,r2);
+    const outer=Math.min(w*.39,h*.39), earth=Math.max(15,outer*Math.min(.16,RE/maxR*.7));
+    const scale=rad => earth+(rad-RE)/(maxR-RE||1)*(outer-earth);
+    const ro1=scale(r1), ro2=scale(r2), rp=scale(minR), ra=scale(maxR);
+    // faint orbital guides
+    ctx.setLineDash([3,7]); ctx.lineWidth=1; ctx.strokeStyle='#334653';
+    for(let i=1;i<=3;i++){ctx.beginPath();ctx.arc(cx,cy,earth+(outer-earth)*i/3,0,Math.PI*2);ctx.stroke()}
+    ctx.setLineDash([]);
+    ctx.beginPath();ctx.arc(cx,cy,ro1,0,Math.PI*2);ctx.strokeStyle='#5de1e6';ctx.lineWidth=2;ctx.stroke();
+    ctx.beginPath();ctx.arc(cx,cy,ro2,0,Math.PI*2);ctx.strokeStyle='#76a9ff';ctx.lineWidth=2;ctx.stroke();
+    // Transfer ellipse with apsides on the horizontal axis.
+    const e=Math.abs(r2-r1)/(r1+r2), aa=(rp+ra)/2, b=aa*Math.sqrt(1-e*e), centerOffset=(ra-rp)/2;
+    ctx.beginPath();ctx.ellipse(cx+centerOffset,cy,aa,b,0,0,Math.PI*2);ctx.strokeStyle='#ffbd75';ctx.lineWidth=2.5;ctx.stroke();
+    // Earth
+    const glow=ctx.createRadialGradient(cx-earth*.25,cy-earth*.3,earth*.08,cx,cy,earth*1.5);
+    glow.addColorStop(0,'#86e4e7');glow.addColorStop(.45,'#237e99');glow.addColorStop(1,'#153650');
+    ctx.beginPath();ctx.arc(cx,cy,earth,0,Math.PI*2);ctx.fillStyle=glow;ctx.fill();
+    ctx.beginPath();ctx.arc(cx,cy,earth,0,Math.PI*2);ctx.strokeStyle='#8ee9eb';ctx.lineWidth=1;ctx.stroke();
+    // departure and arrival markers (transfer direction adapts to altitude order)
+    const startX=h1<h2?cx-rp:cx+ra, endX=h1<h2?cx+ra:cx-rp;
+    marker(startX,cy,h1<h2?'#5de1e6':'#76a9ff'); marker(endX,cy,h1<h2?'#76a9ff':'#5de1e6');
+    function marker(x,y,color){ctx.beginPath();ctx.arc(x,y,5,0,Math.PI*2);ctx.fillStyle=color;ctx.fill();ctx.strokeStyle='#101923';ctx.lineWidth=2;ctx.stroke()}
+  }
+  new ResizeObserver(update).observe(canvas);
+  update();
+})();
+</script>
+</body>
+</html>
