@@ -2,11 +2,9 @@
 
 # Transfert de Hohmann
 
-### Calculateur orbital · Python · Visualisation interactive
+### Calculateur orbital · Python
 
-Explore un transfert entre deux orbites circulaires autour de la Terre : ses deux manœuvres, son coût en delta-v et son temps de vol.
-
-[**Ouvrir le visualiseur interactif ↗**](https://you21293.github.io/transfert-de-hohmann/)
+Calcule les deux manœuvres, le coût en delta-v et le temps de vol d’un transfert entre deux orbites circulaires autour de la Terre.
 
 ![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)
 ![Sans dépendance](https://img.shields.io/badge/dépendances-aucune-2E8B57)
@@ -20,10 +18,7 @@ Explore un transfert entre deux orbites circulaires autour de la Terre : ses deu
 
 Le transfert de Hohmann est une manœuvre idéale à deux impulsions. Le véhicule accélère pour rejoindre une ellipse de transfert, puis effectue une seconde impulsion à l’arrivée afin de circulariser son orbite.
 
-Le dépôt propose deux façons d’explorer le calcul :
-
-- **Visualiseur web** : règle les altitudes avec les curseurs ou les champs numériques et observe la géométrie du transfert ainsi que les résultats qui se mettent à jour.
-- **Calculateur Python** : calcule les impulsions et la durée à partir de deux altitudes saisies en kilomètres.
+Ce programme Python calcule les impulsions et la durée à partir de deux altitudes saisies en kilomètres.
 
 ## Résultats calculés
 
@@ -34,17 +29,11 @@ Le dépôt propose deux façons d’explorer le calcul :
 
 ## Utilisation
 
-### Visualiseur web
-
-Ouvre [le visualiseur interactif](https://you21293.github.io/transfert-de-hohmann/) dans un navigateur récent. Il fonctionne sans installation ni bibliothèque externe.
-
-### Calculateur Python
-
 Python 3.10 ou une version ultérieure est nécessaire. Depuis le dossier du projet :
 
-```bash
+~~~
 python hohmann.py 200 35786
-```
+~~~
 
 Les arguments sont les altitudes de départ et d’arrivée en kilomètres au-dessus de la surface terrestre. Pour calculer un transfert dans l’autre sens, inverse les deux valeurs.
 
@@ -72,16 +61,15 @@ Le calcul utilise $\mu_{\mathrm{Terre}}=398600.4418\;\mathrm{km^3/s^2}$ et un ra
 
 ## Hypothèses et limites
 
-Le modèle suppose deux orbites circulaires coplanaires et des manœuvres instantanées. Il ne prend pas en compte les pertes moteur, la traînée atmosphérique, l’aplatissement terrestre ni l’influence d’autres corps. Le schéma est volontairement **non à l’échelle** pour rendre les orbites visibles.
+Le modèle suppose deux orbites circulaires coplanaires et des manœuvres instantanées. Il ne prend pas en compte les pertes moteur, la traînée atmosphérique, l’aplatissement terrestre ni l’influence d’autres corps.
 
 Les résultats sont des estimations pédagogiques à deux corps, pas un plan de mission opérationnel.
 
-## Fichiers
+## Fichier
 
 | Fichier | Rôle |
 |---|---|
-| [`index.html`](index.html) | Visualiseur interactif autonome pour le navigateur |
-| [`hohmann.py`](hohmann.py) | Calculateur Python en ligne de commande |
+| [hohmann.py](hohmann.py) | Calculateur Python en ligne de commande |
 
 ---
 
